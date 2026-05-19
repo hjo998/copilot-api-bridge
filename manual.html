@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot API Bridge &mdash; 매뉴얼</title>
+    <style>
+        :root {
+            --primary: #0969da;
+            --primary-light: #ddf4ff;
+            --success: #1a7f37;
+            --success-light: #dafbe1;
+            --warning: #9a6700;
+            --warning-light: #fff8c5;
+            --danger: #cf222e;
+            --danger-light: #ffebe9;
+            --gray-50: #f6f8fa;
+            --gray-100: #eaeef2;
+            --gray-200: #d0d7de;
+            --gray-600: #57606a;
+            --gray-800: #24292f;
+            --radius: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7; color: var(--gray-800); background: var(--gray-50);
+        }
+        .container { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* Header */
+        .header {
+            text-align: center; padding: 3rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border-radius: var(--radius);
+            margin-bottom: 2rem; box-shadow: var(--shadow);
+        }
+        .header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .header .badge {
+            display: inline-block; background: rgba(255,255,255,0.2);
+            padding: 0.3rem 0.8rem; border-radius: 20px;
+            font-size: 0.85rem; margin-top: 1rem;
+        }
+
+        /* Architecture */
+        .arch { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 2rem; margin: 2rem 0; text-align: center; box-shadow: var(--shadow); }
+        .arch-flow { display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+        .arch-box { background: var(--primary-light); border: 2px solid var(--primary); border-radius: var(--radius); padding: 0.9rem 1.4rem; font-weight: 600; font-size: 0.88rem; }
+        .arch-box.bridge { background: var(--success-light); border-color: var(--success); }
+        .arch-box.copilot { background: #f5f0ff; border-color: #8250df; }
+        .arch-arrow { font-size: 1.4rem; color: var(--gray-600); }
+
+        /* Section */
+        .section { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 2rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+        .section h2 { font-size: 1.4rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--gray-100); }
+        .section h3 { font-size: 1.1rem; margin: 1.5rem 0 0.8rem; color: var(--primary); }
+
+        /* Steps */
+        .steps { counter-reset: step; list-style: none; padding: 0; }
+        .steps li { counter-increment: step; padding: 1rem 1rem 1rem 3.5rem; position: relative; margin-bottom: 0.8rem; background: var(--gray-50); border-radius: var(--radius); border-left: 3px solid var(--primary); }
+        .steps li::before { content: counter(step); position: absolute; left: 1rem; top: 1rem; width: 1.8rem; height: 1.8rem; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .steps li strong { display: block; margin-bottom: 0.3rem; }
+
+        /* Code */
+        .code-block { background: #1e1e1e; color: #d4d4d4; border-radius: var(--radius); padding: 1.2rem; margin: 0.8rem 0; overflow-x: auto; font-family: 'Cascadia Code','Fira Code','Consolas', monospace; font-size: 0.87rem; line-height: 1.5; position: relative; white-space: pre; }
+        .code-block .lang-tag { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .code-block .comment { color: #6a9955; }
+        .code-block .string { color: #ce9178; }
+        .code-block .keyword { color: #569cd6; }
+        .code-block .function { color: #dcdcaa; }
+
+        /* Callout */
+        .callout { padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); margin: 1rem 0; position: relative; }
+        .callout::before { position: absolute; left: 1rem; top: 1rem; font-size: 1.2rem; }
+        .callout.info   { background: var(--primary-light);  border-left: 4px solid var(--primary); }
+        .callout.info::before   { content: "💡"; }
+        .callout.success{ background: var(--success-light);  border-left: 4px solid var(--success); }
+        .callout.success::before{ content: "✅"; }
+        .callout.warning{ background: var(--warning-light);  border-left: 4px solid var(--warning); }
+        .callout.warning::before{ content: "⚠️"; }
+        .callout.danger { background: var(--danger-light);   border-left: 4px solid var(--danger); }
+        .callout.danger::before { content: "🚨"; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+        th, td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--gray-200); }
+        th { background: var(--gray-50); font-weight: 600; }
+        tr:hover td { background: var(--gray-50); }
+
+        /* Tabs */
+        .tabs { margin: 1rem 0; }
+        .tab-buttons { display: flex; gap: 0; border-bottom: 2px solid var(--gray-200); }
+        .tab-btn { padding: 0.6rem 1.2rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--gray-600); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; padding-top: 1rem; }
+        .tab-content.active { display: block; }
+
+        /* Accordion */
+        details { margin: 0.5rem 0; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; }
+        details summary { padding: 1rem; cursor: pointer; font-weight: 600; background: var(--gray-50); }
+        details summary:hover { background: var(--gray-100); }
+        details[open] summary { border-bottom: 1px solid var(--gray-200); }
+        details .detail-content { padding: 1rem; }
+
+        /* TOC */
+        .toc { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; }
+        .toc h3 { margin-bottom: 0.8rem; font-size: 1rem; }
+        .toc ol { padding-left: 1.5rem; }
+        .toc li { margin: 0.4rem 0; }
+        .toc a { text-decoration: none; color: var(--primary); }
+        .toc a:hover { text-decoration: underline; }
+
+        .footer { text-align: center; padding: 2rem; color: var(--gray-600); font-size: 0.85rem; }
+
+        kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 0.85em; }
+
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .header { padding: 2rem 1rem; }
+            .header h1 { font-size: 1.6rem; }
+            .arch-flow { flex-direction: column; }
+            .arch-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ========== Header ========== -->
+    <div class="header">
+        <h1>Copilot API Bridge</h1>
+        <p>VS Code의 GitHub Copilot을 어디서든 사용하는 로컬 API 서버</p>
+        <span class="badge">v0.1.0 · localhost 전용 · OpenAI 호환 · 모델: claude-opus-4.6</span>
+    </div>
+
+    <!-- ========== TOC ========== -->
+    <div class="toc">
+        <h3>📋 목차</h3>
+        <ol>
+            <li><a href="#what">이게 뭐야?</a></li>
+            <li><a href="#prereq">사전 준비</a></li>
+            <li><a href="#install">설치 방법 (최초 1회)</a></li>
+            <li><a href="#verify">동작 확인</a></li>
+            <li><a href="#usage">새 프로젝트에서 AI 사용하기</a></li>
+            <li><a href="#examples">코드 예시 (실전)</a></li>
+            <li><a href="#docreview">실전 적용 — DocReview 기술문서 리뷰 콘솔</a></li>
+            <li><a href="#settings">설정 변경</a></li>
+            <li><a href="#faq">자주 묻는 질문</a></li>
+        </ol>
+    </div>
+
+    <!-- ========== 1. What ========== -->
+    <div class="section" id="what">
+        <h2>1. 이게 뭐야?</h2>
+        <p>회사에서 <strong>GitHub Copilot만 허용</strong>되는 상황에서, VS Code 안에서만 쓸 수 있는 Copilot AI를<br>
+        <strong>다른 프로그램(Python 스크립트, 웹앱, 자동화 도구 등)</strong>에서도 사용할 수 있게 해주는 다리(Bridge)입니다.</p>
+
+        <div class="arch">
+            <h3 style="margin-bottom: 1.2rem; color: var(--gray-800);">전체 아키텍처</h3>
+            <div class="arch-flow">
+                <div class="arch-box">🐍 Python 스크립트<br><small>requests / openai</small></div>
+                <span class="arch-arrow">→</span>
+                <div class="arch-box bridge">🔌 API Bridge<br><small>localhost:3141</small></div>
+                <span class="arch-arrow">→</span>
+                <div class="arch-box copilot">🤖 Copilot LM API<br><small>claude-opus-4.6</small></div>
+            </div>
+            <div style="margin-top: 1.2rem; border-top: 1px dashed var(--gray-200); padding-top: 1rem;">
+                <div class="arch-flow">
+                    <div class="arch-box">📄 DocReview 웹앱<br><small>브라우저 (doc-reviewer.html)</small></div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-box bridge">🖥️ serve.py<br><small>역프록시 :8080</small></div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-box bridge">🔌 API Bridge<br><small>localhost:3141</small></div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-box copilot">🤖 Copilot LM<br><small>claude-opus-4.6</small></div>
+                </div>
+                <p style="margin-top: 0.8rem; color: var(--gray-600); font-size: 0.83rem;">
+                    위: 스크립트에서 직접 호출 &nbsp;/&nbsp; 아래: 웹앱(DocReview)에서 역프록시 경유<br>
+                    모든 통신은 내 PC 안에서만 (네트워크 노출 없음)
+                </p>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <strong>OpenAI API와 100% 같은 형식</strong>으로 동작합니다.<br>
+            <code>openai</code> Python 라이브러리를 그대로 사용하고, <code>base_url</code>만 바꾸면 됩니다.
+        </div>
+    </div>
+
+    <!-- ========== 2. Prerequisites ========== -->
+    <div class="section" id="prereq">
+        <h2>2. 사전 준비</h2>
+        <table>
+            <tr><th>항목</th><th>필요 조건</th><th>확인 방법</th></tr>
+            <tr><td>VS Code</td><td>v1.90 이상</td><td>Help → About</td></tr>
+            <tr><td>GitHub Copilot</td><td>확장 설치 + 로그인 완료</td><td>좌측 하단에 Copilot 아이콘</td></tr>
+            <tr><td>Node.js</td><td>v18 이상 (빌드용)</td><td><code>node --version</code></td></tr>
+            <tr><td>Python</td><td>3.8 이상</td><td><code>python --version</code></td></tr>
+        </table>
+    </div>
+
+    <!-- ========== 3. Install ========== -->
+    <div class="section" id="install">
+        <h2>3. 설치 방법 (최초 1회)</h2>
+
+        <ol class="steps">
+            <li>
+                <strong>터미널 열기</strong>
+                VS Code에서 <kbd>Ctrl</kbd> + <kbd>`</kbd> (백틱)으로 터미널을 엽니다.
+            </li>
+            <li>
+                <strong>확장 빌드</strong>
+                <div class="code-block"><span class="lang-tag">powershell</span>
+<span class="keyword">cd</span> tools\copilot-api-bridge
+<span class="keyword">npm</span> install
+<span class="keyword">npm</span> run compile</div>
+            </li>
+            <li>
+                <strong>VS Code에 확장 연결</strong>
+                <div class="code-block"><span class="lang-tag">powershell (관리자)</span>
+<span class="comment"># PowerShell을 "관리자 권한"으로 실행:</span>
+$extDir = <span class="string">"$env:USERPROFILE\.vscode\extensions\local.copilot-api-bridge-0.1.0"</span>
+$target = <span class="string">"&lt;워크스페이스 경로&gt;\tools\copilot-api-bridge"</span>
+<span class="keyword">New-Item</span> -ItemType Junction -Path $extDir -Target $target</div>
+                <div class="callout warning">
+                    이미 존재한다는 오류가 나면 이미 설치된 것입니다.
+                </div>
+            </li>
+            <li>
+                <strong>VS Code 재시작</strong>
+                완전히 닫았다가 다시 열면, 하단 상태바에
+                <code style="background:#1e1e1e; color:#4ec9b0; padding:2px 8px; border-radius:4px;">📡 API:3141</code> 표시.
+            </li>
+            <li>
+                <strong>첫 동의 (1회만)</strong>
+                첫 API 호출 시 VS Code 상단에 Language Model 사용 동의 팝업 → <strong>"Allow"</strong> 클릭.
+            </li>
+        </ol>
+    </div>
+
+    <!-- ========== 4. Verify ========== -->
+    <div class="section" id="verify">
+        <h2>4. 동작 확인</h2>
+
+        <div class="code-block"><span class="lang-tag">powershell</span>
+<span class="comment"># Health check</span>
+<span class="keyword">curl</span> http://127.0.0.1:3141/health
+<span class="comment"># → {"status":"ok","service":"copilot-api-bridge"}</span>
+
+<span class="comment"># 모델 목록</span>
+<span class="keyword">curl</span> http://127.0.0.1:3141/v1/models
+<span class="comment"># → {"object":"list","data":[{"id":"claude-opus-4.6",...}]}</span>
+
+<span class="comment"># 테스트 스크립트</span>
+<span class="keyword">python</span> tools/copilot-api-bridge/test_api.py</div>
+
+        <div class="callout success">"status: ok"가 보이면 성공!</div>
+
+        <div class="callout danger">
+            연결 실패 시:<br>
+            • VS Code가 열려 있는지?<br>
+            • 하단에 "API:3141" 표시가 있는지?<br>
+            • GitHub Copilot에 로그인되어 있는지?
+        </div>
+    </div>
+
+    <!-- ========== 5. Usage ========== -->
+    <div class="section" id="usage">
+        <h2>5. 새 프로젝트에서 AI 사용하기</h2>
+        <p>아무 프로젝트에서든 3단계면 AI를 붙일 수 있습니다:</p>
+
+        <ol class="steps">
+            <li>
+                <strong>openai 라이브러리 설치</strong>
+                <div class="code-block"><span class="lang-tag">bash</span>
+pip install openai</div>
+            </li>
+            <li>
+                <strong>클라이언트 설정 (코드 2줄)</strong>
+                <div class="code-block"><span class="lang-tag">python</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(
+    base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>,   <span class="comment"># ← 이것만 바꾸면 됨</span>
+    api_key=<span class="string">"not-needed"</span>                    <span class="comment"># ← 아무 값이나 OK</span>
+)</div>
+            </li>
+            <li>
+                <strong>AI 호출</strong>
+                <div class="code-block"><span class="lang-tag">python</span>
+response = client.chat.completions.<span class="function">create</span>(
+    model=<span class="string">"claude-opus-4.6"</span>,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: <span class="string">"도움이 되는 AI 어시스턴트입니다."</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>,   <span class="string">"content"</span>: <span class="string">"안녕하세요!"</span>}
+    ]
+)
+<span class="keyword">print</span>(response.choices[0].message.content)</div>
+            </li>
+        </ol>
+
+        <div class="callout info">
+            <strong>핵심:</strong> 기존 OpenAI API 코드가 있다면 <code>base_url</code>과 <code>model</code>만 바꾸면 바로 동작합니다.
+        </div>
+
+        <h3>복사해서 쓰는 헬퍼 템플릿</h3>
+        <div class="code-block"><span class="lang-tag">python — 새 프로젝트 시작 템플릿</span>
+<span class="comment">"""
+Copilot API Bridge 헬퍼
+사전 조건: VS Code에서 확장이 실행 중이어야 함
+"""</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>, api_key=<span class="string">"not-needed"</span>)
+
+<span class="keyword">def</span> <span class="function">ask_ai</span>(prompt: str, system: str = <span class="string">"도움이 되는 AI 어시스턴트입니다."</span>) -> str:
+    response = client.chat.completions.<span class="function">create</span>(
+        model=<span class="string">"claude-opus-4.6"</span>,
+        messages=[
+            {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: system},
+            {<span class="string">"role"</span>: <span class="string">"user"</span>,   <span class="string">"content"</span>: prompt}
+        ]
+    )
+    <span class="keyword">return</span> response.choices[0].message.content
+
+<span class="comment"># 사용</span>
+<span class="keyword">print</span>(<span class="function">ask_ai</span>(<span class="string">"Python에서 리스트 컴프리헨션이 뭐야?"</span>))</div>
+    </div>
+
+    <!-- ========== 6. Examples ========== -->
+    <div class="section" id="examples">
+        <h2>6. 코드 예시 (실전)</h2>
+
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab(event,'tab-review')">📄 문서 리뷰</button>
+                <button class="tab-btn" onclick="switchTab(event,'tab-translate')">🌐 번역</button>
+                <button class="tab-btn" onclick="switchTab(event,'tab-data')">📊 데이터 분석</button>
+                <button class="tab-btn" onclick="switchTab(event,'tab-streamlit')">🖥️ Streamlit</button>
+            </div>
+
+            <div id="tab-review" class="tab-content active">
+                <h3>Word 문서를 AI로 리뷰하기</h3>
+                <div class="code-block"><span class="lang-tag">python</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+<span class="keyword">import</span> docx  <span class="comment"># pip install python-docx</span>
+
+client = OpenAI(base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>, api_key=<span class="string">"x"</span>)
+
+<span class="comment"># 1. Word 문서 텍스트 추출</span>
+doc = docx.Document(<span class="string">"report.docx"</span>)
+text = <span class="string">"\n"</span>.join(p.text <span class="keyword">for</span> p <span class="keyword">in</span> doc.paragraphs <span class="keyword">if</span> p.text.strip())
+
+<span class="comment"># 2. AI에게 리뷰 요청</span>
+response = client.chat.completions.<span class="function">create</span>(
+    model=<span class="string">"claude-opus-4.6"</span>,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: <span class="string">"""기술 문서 리뷰어입니다.
+다음 관점에서 리뷰하세요:
+1. 논리적 일관성  2. 누락된 내용
+3. 문법/맞춤법    4. 개선 제안"""</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: f<span class="string">"다음 문서를 리뷰해주세요:\n\n{text}"</span>}
+    ]
+)
+<span class="keyword">print</span>(response.choices[0].message.content)</div>
+            </div>
+
+            <div id="tab-translate" class="tab-content">
+                <h3>문서 번역</h3>
+                <div class="code-block"><span class="lang-tag">python</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>, api_key=<span class="string">"x"</span>)
+
+<span class="keyword">def</span> <span class="function">translate</span>(text, target_lang=<span class="string">"English"</span>):
+    r = client.chat.completions.<span class="function">create</span>(
+        model=<span class="string">"claude-opus-4.6"</span>,
+        messages=[
+            {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>:
+             f<span class="string">"전문 번역가입니다. {target_lang}로 자연스럽게 번역합니다. 기술 용어는 유지합니다."</span>},
+            {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: text}
+        ]
+    )
+    <span class="keyword">return</span> r.choices[0].message.content
+
+<span class="keyword">print</span>(<span class="function">translate</span>(<span class="string">"배터리 에너지 저장 시스템(BESS)의 용량 산정 방법론을 설명합니다."</span>))</div>
+            </div>
+
+            <div id="tab-data" class="tab-content">
+                <h3>데이터 분석</h3>
+                <div class="code-block"><span class="lang-tag">python</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+<span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+
+client = OpenAI(base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>, api_key=<span class="string">"x"</span>)
+df = pd.<span class="function">read_excel</span>(<span class="string">"data.xlsx"</span>)
+summary = df.<span class="function">describe</span>().to_string()
+
+r = client.chat.completions.<span class="function">create</span>(
+    model=<span class="string">"claude-opus-4.6"</span>,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: <span class="string">"데이터 분석 전문가. 핵심 인사이트를 한국어로 정리."</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: f<span class="string">"주요 특징과 인사이트:\n\n{summary}"</span>}
+    ]
+)
+<span class="keyword">print</span>(r.choices[0].message.content)</div>
+            </div>
+
+            <div id="tab-streamlit" class="tab-content">
+                <h3>Streamlit 웹앱 + AI 채팅</h3>
+                <div class="code-block"><span class="lang-tag">python — app.py</span>
+<span class="keyword">import</span> streamlit <span class="keyword">as</span> st
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(base_url=<span class="string">"http://127.0.0.1:3141/v1"</span>, api_key=<span class="string">"x"</span>)
+st.<span class="function">title</span>(<span class="string">"AI 어시스턴트"</span>)
+
+<span class="keyword">if</span> <span class="string">"messages"</span> <span class="keyword">not in</span> st.session_state:
+    st.session_state.messages = []
+
+<span class="keyword">for</span> msg <span class="keyword">in</span> st.session_state.messages:
+    <span class="keyword">with</span> st.<span class="function">chat_message</span>(msg[<span class="string">"role"</span>]):
+        st.<span class="function">write</span>(msg[<span class="string">"content"</span>])
+
+<span class="keyword">if</span> prompt := st.<span class="function">chat_input</span>(<span class="string">"질문을 입력하세요"</span>):
+    st.session_state.messages.<span class="function">append</span>({<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: prompt})
+    <span class="keyword">with</span> st.<span class="function">chat_message</span>(<span class="string">"assistant"</span>):
+        r = client.chat.completions.<span class="function">create</span>(
+            model=<span class="string">"claude-opus-4.6"</span>, messages=st.session_state.messages
+        )
+        answer = r.choices[0].message.content
+        st.<span class="function">write</span>(answer)
+    st.session_state.messages.<span class="function">append</span>({<span class="string">"role"</span>: <span class="string">"assistant"</span>, <span class="string">"content"</span>: answer})</div>
+                <p style="margin-top:0.5rem">실행: <code>streamlit run app.py</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 7. DocReview ========== -->
+    <div class="section" id="docreview">
+        <h2>7. 실전 적용 — DocReview 기술문서 리뷰 콘솔</h2>
+        <p>Copilot API Bridge의 첫 번째 실전 활용 사례입니다.<br>
+        영문 기술문서(Word .docx)를 브라우저에서 열고, AI가 문법·오타·맥락·상충을 섹션 단위로 검토합니다.</p>
+
+        <h3>DocReview란?</h3>
+        <table>
+            <tr><th>항목</th><th>내용</th></tr>
+            <tr><td>목적</td><td>BESS 영문 기술문서의 AI 기술 리뷰 (문법/표현/맥락/상충)</td></tr>
+            <tr><td>사용자</td><td>엔지니어 / 테크니컬 라이터 (비개발자)</td></tr>
+            <tr><td>입출력</td><td>.docx 업로드 → 섹션별 AI 리뷰 → 제안 텍스트 복사</td></tr>
+            <tr><td>LLM 연결</td><td>serve.py 역프록시 → Copilot API Bridge (:3141)</td></tr>
+        </table>
+
+        <h3>실행 방법</h3>
+        <ol class="steps">
+            <li>
+                <strong>Copilot API Bridge가 실행 중인지 확인</strong>
+                VS Code 하단에 <code>API:3141</code> 표시 확인
+            </li>
+            <li>
+                <strong>DocReview 서버 시작</strong>
+                <div class="code-block"><span class="lang-tag">powershell</span>
+<span class="keyword">cd</span> projects\docreview
+<span class="keyword">pip</span> install -r requirements.txt
+<span class="keyword">python</span> serve.py --port 8080 --api http://127.0.0.1:3141</div>
+                <p style="margin-top:0.5rem; font-size:0.88rem; color: var(--gray-600);">
+                    또는 <code>start.bat</code> 더블클릭 (Windows)
+                </p>
+            </li>
+            <li>
+                <strong>브라우저에서 접속</strong>
+                <code>http://localhost:8080</code> 접속 → .docx 파일 업로드 → "리뷰 시작"
+            </li>
+        </ol>
+
+        <div class="callout info">
+            <strong>서버 역할:</strong> serve.py는 정적 HTML 서빙 + <code>/v1/*</code> 요청을 API Bridge로 역프록시합니다.<br>
+            브라우저 → serve.py(:8080) → API Bridge(:3141) → Copilot. CORS 문제가 원천 해소됩니다.
+        </div>
+
+        <h3>프로젝트 구조</h3>
+        <div class="code-block"><span class="lang-tag">text</span>
+projects/docreview/
+├── serve.py               ← Python 역프록시 서버 (정적 파일 + /v1 프록시)
+├── start.bat              ← Windows 원클릭 실행
+├── requirements.txt       ← python-docx
+├── Caddyfile              ← 운영 배포용 리버스 프록시 설정
+├── web/
+│   └── doc-reviewer.html  ← 단일 파일 SPA (mammoth.js로 docx 파싱)
+└── docs/
+    ├── CONTEXT.md          ← 결정 히스토리 (필독)
+    ├── DEPLOY.md           ← 서버 배포 레시피
+    ├── HANDOFF.md          ← 완료/미완료/다음 단계
+    └── PROMPT.md           ← 리뷰 프롬프트 설계 노트</div>
+    </div>
+
+    <!-- ========== 8. Settings ========== -->
+    <div class="section" id="settings">
+        <h2>8. 설정 변경</h2>
+        <p>VS Code에서 <kbd>Ctrl</kbd> + <kbd>,</kbd> → 검색창에 "copilot-api-bridge" 입력</p>
+
+        <table>
+            <tr><th>설정</th><th>기본값</th><th>설명</th></tr>
+            <tr><td><code>port</code></td><td>3141</td><td>서버 포트. 충돌 시 변경</td></tr>
+            <tr><td><code>autoStart</code></td><td>true</td><td>VS Code 시작 시 자동 실행</td></tr>
+            <tr><td><code>defaultModel</code></td><td>claude-opus-4.6</td><td>model 미지정 시 기본값</td></tr>
+            <tr><td><code>authToken</code></td><td>(비어있음)</td><td>설정 시 Bearer 토큰 인증</td></tr>
+        </table>
+
+        <h3>사용 가능한 모델 확인</h3>
+        <div class="code-block"><span class="lang-tag">bash</span>
+curl http://127.0.0.1:3141/v1/models</div>
+        <div class="callout info">
+            현재 환경: <strong>claude-opus-4.6</strong> 1개 사용 가능.<br>
+            Copilot 업데이트에 따라 변경될 수 있습니다.
+        </div>
+    </div>
+
+    <!-- ========== 9. FAQ ========== -->
+    <div class="section" id="faq">
+        <h2>9. 자주 묻는 질문</h2>
+
+        <details>
+            <summary>VS Code를 닫으면 API도 꺼지나요?</summary>
+            <div class="detail-content">
+                <strong>네.</strong> VS Code가 열려 있어야 합니다. 최소화해두면 됩니다.
+            </div>
+        </details>
+        <details>
+            <summary>다른 PC에서 접근할 수 있나요?</summary>
+            <div class="detail-content">
+                <strong>API Bridge 자체는 아닙니다</strong> (localhost 전용).<br>
+                단, DocReview의 serve.py는 <code>0.0.0.0</code>으로 리슨하므로 같은 네트워크 PC에서
+                <code>http://&lt;서버IP&gt;:8080</code>으로 접속 가능합니다.
+            </div>
+        </details>
+        <details>
+            <summary>동시에 여러 요청을 보내도 되나요?</summary>
+            <div class="detail-content">
+                가능하지만 Copilot rate limit이 있으므로 배치 처리 시 1-2초 간격 권장.
+            </div>
+        </details>
+        <details>
+            <summary>어떤 모델을 쓸 수 있나요?</summary>
+            <div class="detail-content">
+                현재 <strong>claude-opus-4.6</strong> 1개. <code>curl http://127.0.0.1:3141/v1/models</code>로 확인.
+            </div>
+        </details>
+        <details>
+            <summary>회사 보안 정책에 문제없나요?</summary>
+            <div class="detail-content">
+                <ul>
+                    <li>내 PC 안에서만 동작 (네트워크 노출 없음)</li>
+                    <li>이미 허용된 Copilot 계정 사용</li>
+                    <li>추가 외부 서비스 연결 없음</li>
+                </ul>
+                단, "프로그래밍 방식 접근" 정책은 조직마다 다르므로 확인 필요.
+            </div>
+        </details>
+        <details>
+            <summary>"No Copilot models available" 오류</summary>
+            <div class="detail-content">
+                <ol>
+                    <li>GitHub Copilot 확장 설치 확인</li>
+                    <li>Copilot 로그인 확인 (좌측 하단)</li>
+                    <li>VS Code 재시작</li>
+                    <li>Copilot 구독 유효 확인</li>
+                </ol>
+            </div>
+        </details>
+        <details>
+            <summary>응답이 중간에 잘리는 경우</summary>
+            <div class="detail-content">
+                모델 출력 토큰 제한. 긴 문서는 섹션별로 나누거나, "간결하게" 지시 추가.
+            </div>
+        </details>
+        <details>
+            <summary>DocReview에서 "502 Bad Gateway" 에러</summary>
+            <div class="detail-content">
+                serve.py가 API Bridge에 연결 실패. 확인 순서:
+                <ol>
+                    <li>VS Code에서 API Bridge 실행 중? (API:3141 표시)</li>
+                    <li>serve.py 실행 시 <code>--api http://127.0.0.1:3141</code> 올바른지?</li>
+                    <li>포트 충돌 없는지?</li>
+                </ol>
+            </div>
+        </details>
+    </div>
+
+    <!-- ========== Quick Ref ========== -->
+    <div class="section" style="background: linear-gradient(to right, #f0f9ff, #fff);">
+        <h2>⚡ 빠른 참조 카드</h2>
+        <table>
+            <tr><th>하고 싶은 것</th><th>명령 / 코드</th></tr>
+            <tr><td>서버 상태 확인</td><td><code>curl http://127.0.0.1:3141/health</code></td></tr>
+            <tr><td>모델 목록</td><td><code>curl http://127.0.0.1:3141/v1/models</code></td></tr>
+            <tr><td>서버 수동 시작</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Copilot API Bridge: Start Server"</td></tr>
+            <tr><td>서버 중지</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Copilot API Bridge: Stop Server"</td></tr>
+            <tr><td>Python에서 사용</td><td><code>OpenAI(base_url="http://127.0.0.1:3141/v1", api_key="x")</code></td></tr>
+            <tr><td>모델 지정</td><td><code>model="claude-opus-4.6"</code></td></tr>
+            <tr><td>DocReview 실행</td><td><code>python projects/docreview/serve.py --port 8080 --api http://127.0.0.1:3141</code></td></tr>
+            <tr><td>포트 변경</td><td>VS Code Settings → <code>copilot-api-bridge.port</code></td></tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Copilot API Bridge v0.1.0 · Made for internal use<br>
+        VS Code가 열려있는 동안 localhost에서만 동작합니다.
+    </div>
+
+</div>
+<script>
+function switchTab(e, id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    e.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

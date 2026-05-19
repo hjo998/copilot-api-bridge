@@ -1,0 +1,64 @@
+{
+  "name": "copilot-api-bridge",
+  "displayName": "Copilot API Bridge",
+  "description": "VS Code Copilot LM API를 로컬 HTTP 서버로 노출하는 확장",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "copilot-api-bridge.start",
+        "title": "Copilot API Bridge: Start Server"
+      },
+      {
+        "command": "copilot-api-bridge.stop",
+        "title": "Copilot API Bridge: Stop Server"
+      },
+      {
+        "command": "copilot-api-bridge.status",
+        "title": "Copilot API Bridge: Show Status"
+      }
+    ],
+    "configuration": {
+      "title": "Copilot API Bridge",
+      "properties": {
+        "copilot-api-bridge.port": {
+          "type": "number",
+          "default": 3141,
+          "description": "HTTP 서버 포트 번호"
+        },
+        "copilot-api-bridge.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "VS Code 시작 시 자동으로 서버 시작"
+        },
+        "copilot-api-bridge.defaultModel": {
+          "type": "string",
+          "default": "claude-opus-4.6",
+          "description": "기본 사용 모델 (copilot family name)"
+        },
+        "copilot-api-bridge.authToken": {
+          "type": "string",
+          "default": "",
+          "description": "Bearer 토큰 (비어있으면 인증 없이 localhost만 허용)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
